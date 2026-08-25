@@ -1,0 +1,1868 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NPrep · Today's Question</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blue:#2E86F0;
+  --blue-text:#1568D6;   /* 4.92:1 on white — the fill blue is only 3.63 */
+  --azure-text:#0A6BD0;        /* home screen blue */
+  --azure:#0A6BD0;       /* quiz flow blue */
+  --navy:#131B63;
+  --ink:#101828;
+  --muted:#5B6878;
+  --ok:#15803D;
+  --bad:#E0374A;
+  --gold:#8A6216;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --spring:cubic-bezier(.68,-.55,.265,1.55);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Poppins',system-ui,-apple-system,sans-serif;
+  background:#EEF4FA;
+  display:flex;align-items:flex-start;justify-content:center;
+  min-height:100vh;padding:24px 16px 96px;
+  -webkit-font-smoothing:antialiased;
+}
+/* the phone is a fixed 375x812 device frame — scale it to fill the screen it is viewed on */
+.stage{
+  width:375px;height:812px;flex:0 0 auto;
+  transform-origin:top center;
+  transition:transform .18s var(--ease);
+}
+
+/* ── phone shell ───────────────────────────────── */
+.phone{
+  width:375px;max-width:100%;height:812px;
+  overscroll-behavior:contain;
+  background:#fff;
+  border-radius:26px;
+  border:1px solid #DCE5EF;
+  box-shadow:0 2px 6px rgba(19,27,99,.06),0 24px 60px rgba(19,27,99,.14);
+  overflow:hidden;position:relative;
+  opacity:0;transform:translateY(16px);
+  animation:shellIn .7s var(--ease) forwards;
+}
+@keyframes shellIn{to{opacity:1;transform:none}}
+
+/* home layer */
+.home{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;
+  background:linear-gradient(180deg,#DCEAF7 0%,#E5F1FB 16%,#EFF6FD 30%,#F6FAFE 42%);
+  transition:filter .45s var(--ease),transform .45s var(--ease);
+}
+.home-pinned{
+  position:relative;z-index:2;
+  padding:0 14px 14px;
+}
+
+/* compact "Quizzes" chip — takes the header's centre once the quiz block scrolls away */
+.pill-slot{flex:1;display:flex;justify-content:center;min-width:0}
+.hpill{
+  position:relative;display:inline-flex;align-items:center;gap:6px;
+  height:40px;padding:0 8px 0 15px;border-radius:999px;
+  background:#fff;border:1px solid #E9EFF6;
+  box-shadow:0 2px 8px rgba(19,27,99,.09);
+  font-family:inherit;font-size:14px;font-weight:700;font-style:italic;color:#0F1729;
+  cursor:pointer;white-space:nowrap;
+  opacity:0;transform:translateY(-8px) scale(.94);pointer-events:none;
+  transition:opacity .28s var(--ease),transform .28s var(--spring),box-shadow .25s var(--ease);
+}
+.phone.pill-on .hpill{opacity:1;transform:none;pointer-events:auto}
+
+.hpill:active{transform:scale(.94)}
+.hpill .bolt{width:12px;height:14px;flex:0 0 auto}
+.hpill .cv{width:15px;height:15px;stroke:#9AA6B5;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* header frosts over once it sits on top of content */
+.topbar{
+  position:sticky;top:0;z-index:20;
+  padding:14px 14px 6px;
+  transition:background .3s var(--ease),box-shadow .3s var(--ease);
+}
+.phone.pill-on .topbar{
+  background:#F7FBFF;
+  box-shadow:0 4px 16px rgba(19,27,99,.07);
+}
+
+/* ── jobs banner ───────────────────────────── */
+.jobs{
+  margin-top:14px;border-radius:14px;overflow:hidden;position:relative;
+  background:linear-gradient(120deg,#E8F1FD 0%,#EFF6FE 60%,#E6F0FC 100%);
+  padding:16px 15px;color:#16233A;cursor:pointer;
+  box-shadow:0 1px 2px rgba(19,27,99,.04);
+  transition:transform .28s var(--ease),box-shadow .28s var(--ease);
+}
+
+.jobs::before{
+  content:'';position:absolute;right:-34px;top:-46px;width:190px;height:190px;pointer-events:none;
+  border-radius:50%;background:rgba(46,134,240,.07);
+}
+.jobs .jt{font-size:15px;font-weight:700;position:relative;color:#12306B}
+.jobs .js{font-size:12px;line-height:1.45;color:#465569;margin-top:5px;max-width:168px;position:relative}
+.jobs .jb{
+  position:relative;margin-top:13px;height:44px;padding:0 18px;border:0;border-radius:999px;background:#1A5FC0;
+  color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;position:relative;
+  transition:transform .25s var(--spring);
+}
+
+.jobs .jb:active{transform:scale(.94)}
+.jobs .art{position:absolute;right:8px;bottom:0;width:130px;height:120px}
+
+/* ── category cards ────────────────────────── */
+.cats{
+  display:flex;gap:12px;margin:14px -14px 0;padding:2px 14px 6px;
+  overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+}
+.cats::-webkit-scrollbar{height:0}
+.cat{
+  flex:0 0 152px;scroll-snap-align:start;position:relative;overflow:hidden;
+  background:#fff;border:0;border-radius:14px;padding:14px 13px 13px;
+  min-height:142px;cursor:pointer;
+  box-shadow:0 1px 2px rgba(19,27,99,.04);
+  transition:transform .28s var(--ease),box-shadow .28s var(--ease);
+}
+
+.cat .ct{font-size:16px;font-weight:700;color:#111C2E}
+.cat .cs{font-size:12px;color:#586170;line-height:1.45;margin-top:5px;max-width:112px}
+.cat .cgo{
+  margin-top:12px;width:22px;height:22px;border-radius:50%;background:#E9F2FD;
+  display:grid;place-items:center;
+}
+.cat .cgo svg{width:11px;height:11px;stroke:#5AA2F0;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.cat .cart{position:absolute;right:-4px;bottom:-4px;width:72px;height:72px}
+
+/* ── bottom tab bar ────────────────────────── */
+.tabs{
+  position:absolute;left:0;right:0;bottom:0;height:64px;z-index:14;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:#FFFFFF;
+  border-top:1px solid #EDF1F7;
+  display:flex;align-items:center;
+  box-shadow:0 -4px 18px rgba(19,27,99,.05);
+  transition:transform .35s var(--ease),opacity .3s var(--ease);
+}
+.phone.sheet-open .tabs,.phone.result-open .tabs{transform:translateY(100%);opacity:0}
+.tab{
+  flex:1;min-height:49px;justify-content:center;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;
+  font-size:11px;color:#6B7787;position:relative;
+  transition:color .25s var(--ease);
+}
+.tab svg{width:19px;height:19px;stroke:#6B7787;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:all .25s var(--ease)}
+
+.tab.on{color:var(--navy);font-weight:600}
+.tab.on svg{stroke:var(--navy);fill:var(--navy)}
+.tab.on::before{
+  content:'';position:absolute;top:-10px;width:26px;height:3px;border-radius:3px;background:var(--navy);
+}
+.home-scroll{
+  position:relative;z-index:1;
+  margin-top:-12px;padding:16px 14px 84px;
+  background:#FBFDFF;border-radius:18px 18px 0 0;
+  box-shadow:0 -6px 18px rgba(19,27,99,.06);
+}
+.home-scroll .tile:first-of-type{margin-top:0}
+.phone.sheet-open .home{filter:blur(7px) saturate(.92);transform:scale(1.015)}
+.home::-webkit-scrollbar{width:0}
+
+.rise{opacity:0;transform:translateY(14px);animation:rise .6s var(--ease) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+.d1{animation-delay:.10s}.d2{animation-delay:.18s}.d3{animation-delay:.26s}
+.d4{animation-delay:.34s}.d5{animation-delay:.42s}.d6{animation-delay:.50s}.d7{animation-delay:.58s}
+
+/* ── top bar ───────────────────────────────────── */
+.topbar{display:flex;align-items:center;gap:10px;padding:2px 2px 0}
+.burger{width:44px;height:44px;margin:0 -11px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;cursor:pointer;position:relative;transition:transform .25s var(--ease)}
+/* hit areas expanded with pseudo-elements — the ink stays the size it looks */
+.more::after,.done-sol::after,.hpill::after{
+  content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:max(100%,44px);height:max(100%,44px);
+}
+.burger span{height:2px;border-radius:2px;background:#2C3A50;display:block;transition:width .3s var(--ease)}
+.burger span:nth-child(1){width:22px}.burger span:nth-child(2){width:22px}.burger span:nth-child(3){width:14px}
+
+.burger:active{transform:scale(.9)}
+.avatar{
+  position:relative;width:40px;height:40px;border-radius:50%;overflow:hidden;flex:0 0 auto;
+  border:2px solid #fff;box-shadow:0 0 0 1.5px #CFE0F4,0 2px 6px rgba(19,27,99,.14);
+  background:linear-gradient(160deg,#F5D9C4,#E9BFA3);
+  transition:transform .3s var(--spring);cursor:pointer;
+}
+
+.avatar svg{display:block;width:100%;height:100%}
+.top-actions{margin-left:auto;display:flex;gap:10px}
+.icon-btn{
+  position:relative;width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid #E4EBF4;
+  display:grid;place-items:center;cursor:pointer;
+  box-shadow:0 1px 3px rgba(19,27,99,.06);
+  transition:transform .25s var(--spring),box-shadow .25s var(--ease),border-color .25s var(--ease);
+}
+
+.icon-btn:active{transform:scale(.93)}
+.icon-btn svg{width:17px;height:17px;stroke:#3A4759;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── section heading ───────────────────────────── */
+.head{text-align:center;margin:2px 0 10px}
+.head h1{margin:0;font-size:15px;font-weight:600;color:#1D2A42;letter-spacing:-.1px}
+.head p{margin:3px 0 0;font-size:15px;font-weight:600;color:var(--blue-text)}
+
+/* ── quiz card (home) ──────────────────────────── */
+.quiz{
+  background:#fff;border:0;border-radius:16px;
+  box-shadow:0 2px 8px rgba(19,27,99,.07),0 18px 40px rgba(19,27,99,.13);
+  overflow:hidden;position:relative;
+}
+.quiz::after{display:none}
+@keyframes pulseRing{
+  0%,100%{box-shadow:0 0 0 0 rgba(46,134,240,.22)}
+  50%{box-shadow:0 0 0 6px rgba(46,134,240,0)}
+}
+.quiz-body{padding:14px 14px 12px}
+.qtext{margin:0;font-size:16px;line-height:1.5;font-weight:500;color:#1E2B44}
+.qtext .qno{font-weight:600}
+
+.badge{
+  width:22px;height:22px;border-radius:50%;background:#EFF3F9;color:#5B6B82;
+  font-size:11px;font-weight:600;display:grid;place-items:center;flex:0 0 auto;
+}
+
+.cta{
+  margin-top:18px;width:100%;height:48px;border:0;border-radius:10px;
+  background:linear-gradient(180deg,#2273DC,#1A5FC0);
+  color:#fff;font-family:inherit;font-size:15px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;
+  box-shadow:0 6px 16px rgba(26,95,192,.34);
+  position:relative;overflow:hidden;
+  transition:transform .3s var(--spring),box-shadow .3s var(--ease);
+}
+
+/* the card lost its outline, so the CTA has to lead on its own.
+   Three passes of a slow breath, then it rests — no perpetual loop. */
+.cta{animation:ctaBreathe 2.8s var(--ease) 1.1s 3}
+@keyframes ctaBreathe{
+  0%,100%{transform:translateY(0);box-shadow:0 6px 16px rgba(26,95,192,.34)}
+  50%{transform:translateY(-2px);box-shadow:0 12px 26px rgba(46,134,240,.44)}
+}
+.cta:active{transform:scale(.96);transition:transform .1s ease}
+.cta svg{width:19px;height:19px;stroke:#fff;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.45);transform:scale(0);animation:ripple .6s var(--ease) forwards;pointer-events:none}
+@keyframes ripple{to{transform:scale(3.2);opacity:0}}
+
+
+.streak{
+  border-top:1px solid #EDF2F8;background:#F3F7FC;
+  padding:9px 10px;display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:12px;font-weight:500;color:#414E60;
+}
+.flame{width:14px;height:15px;display:block;animation:flicker 2.4s var(--ease) infinite}
+@keyframes flicker{0%,100%{transform:scale(1) rotate(0)}45%{transform:scale(1.14) rotate(-4deg)}70%{transform:scale(.97) rotate(3deg)}}
+
+/* ── list tiles ────────────────────────────────── */
+.tile{
+  margin-top:12px;background:#fff;border:0;border-radius:14px;
+  padding:10px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  box-shadow:0 1px 2px rgba(19,27,99,.04);
+  transition:transform .28s var(--ease),box-shadow .28s var(--ease);
+}
+
+.tile:active{transform:translateY(-1px) scale(.995)}
+.thumb{width:88px;height:62px;border-radius:10px;flex:0 0 auto;position:relative;overflow:hidden}
+.thumb .play-b{
+  position:absolute;inset:0;margin:auto;width:26px;height:26px;border-radius:50%;
+  background:rgba(255,255,255,.92);display:grid;place-items:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.18);transition:transform .3s var(--spring);
+}
+
+.thumb .play-b svg{width:11px;height:11px;fill:#2E86F0;stroke:none;margin-left:1.5px}
+.tile .body{min-width:0;flex:1}
+.tile .t{font-size:14px;font-weight:600;color:#1D2A42;line-height:1.3}
+.tile .s{font-size:12px;color:var(--muted);margin-top:3px}
+.tile .link{font-size:13px;font-weight:600;color:var(--blue-text);margin-top:4px;display:inline-block;position:relative}
+.tile .link::after{content:'';position:absolute;left:0;bottom:-1px;height:1.5px;width:0;background:var(--blue);transition:width .28s var(--ease)}
+
+.chev{width:16px;height:16px;stroke:#8B97A6;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto;transition:transform .28s var(--ease)}
+
+.tile.test .icon{width:44px;height:44px;border-radius:10px;background:#EAF2FC;display:grid;place-items:center;flex:0 0 auto}
+.tile.test .icon svg{width:21px;height:21px;stroke:#2E86F0;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tile.test .t{font-size:13px}
+
+/* ── target row ────────────────────────────────── */
+.target-row{display:flex;align-items:center;gap:8px;margin:18px 2px 10px}
+.target-row .lbl{font-size:15px;font-weight:700;color:var(--navy)}
+.target-row .tag{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.3px}
+.target-row .pen{position:relative;overflow:visible;width:13px;height:13px;stroke:var(--blue);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;cursor:pointer;transition:transform .25s var(--spring)}
+
+.pen-btn{width:44px;height:44px;margin:0 -15px;padding:0;border:0;background:none;cursor:pointer;display:grid;place-items:center;flex:0 0 auto}
+.target-row .more{position:relative;margin-left:auto;display:flex;align-items:center;gap:3px;font-size:13px;font-weight:500;color:#4C5A6C;cursor:pointer}
+.target-row .more svg{width:14px;height:14px;stroke:#6B7787;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s var(--ease)}
+
+/* ── readiness ─────────────────────────────────── */
+.ready{background:#fff;border:0;border-radius:14px;padding:13px 14px 10px;box-shadow:0 1px 2px rgba(19,27,99,.04)}
+.ready .r-top{display:flex;align-items:flex-start}
+.ready .r-lbl{font-size:12px;color:#566173}
+.ready .r-val{font-size:22px;font-weight:700;color:var(--navy);line-height:1.15;font-variant-numeric:tabular-nums}
+.ready .goal{margin-left:auto;text-align:right}
+.ready .goal .g{font-size:11px;font-weight:600;color:var(--gold)}
+.chart{margin-top:2px;position:relative}
+.chart svg{display:block;width:100%;height:96px;overflow:visible}
+.spark{fill:none;stroke:#2E86F0;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:400;stroke-dashoffset:400;animation:draw 1.5s var(--ease) .6s forwards}
+.spark-future{fill:none;stroke:#AFD3F6;stroke-width:2.4;stroke-linecap:round;
+  stroke-dasharray:200;stroke-dashoffset:200;animation:draw 1.2s var(--ease) 1.9s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.area{fill:url(#ag);opacity:0;animation:fadeArea .8s var(--ease) 1.5s forwards}
+@keyframes fadeArea{to{opacity:1}}
+.now-dot{opacity:0;animation:pop .5s var(--spring) 1.9s forwards}
+.trophy-chip{opacity:0;animation:pop .5s var(--spring) 2.6s forwards}
+@keyframes pop{0%{opacity:0;transform:scale(.7)}100%{opacity:1;transform:scale(1)}}
+.gline{stroke:#D7E2EE;stroke-width:1;stroke-dasharray:3 4}
+.vline{stroke:#C9D6E4;stroke-width:1;stroke-dasharray:3 4}
+.axis{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#6B7787}
+
+/* ══════════════════════════════════════════════
+   QUIZ SHEET  (screens 1-4)
+   ══════════════════════════════════════════════ */
+.sheet-layer{position:absolute;inset:0;z-index:20;pointer-events:none;visibility:hidden}
+.phone.sheet-open .sheet-layer{pointer-events:auto;visibility:visible}
+
+.sheet-back{
+  position:absolute;top:16px;left:14px;z-index:2;
+  width:44px;height:44px;display:grid;place-items:center;cursor:pointer;
+  background:none;border:0;padding:0;margin:-7px 0 0 -7px;
+  opacity:0;transform:translateX(-6px);transition:all .35s var(--ease) .15s;
+}
+.phone.sheet-open .sheet-back{opacity:1;transform:none}
+.sheet-back svg{width:22px;height:22px;stroke:#2B3646;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sheet-back:active{transform:scale(.88)}
+
+.sheet{
+  position:absolute;left:0;right:0;top:90px;bottom:0;
+  background:#fff;border-radius:20px 20px 0 0;
+  box-shadow:0 -8px 30px rgba(16,24,40,.10);
+  display:flex;flex-direction:column;
+  padding:18px 18px calc(20px + env(safe-area-inset-bottom,0px));
+  transform:translateY(100%);
+  transition:transform .3s var(--ease);
+}
+.phone.sheet-open .sheet{transform:translateY(0)}
+/* shared-element open: the sheet is already in place, and the clip reveals it
+   outward from the card's footprint */
+.sheet.grow{transform:none;transition:clip-path .42s var(--ease)}
+.quiz.handoff{
+  transition:opacity .2s var(--ease),transform .3s var(--ease);
+  opacity:0;transform:scale(.98);
+}
+
+.grabber{
+  width:36px;height:4px;border-radius:4px;background:#D7DFE9;
+  margin:-8px auto 12px;flex:0 0 auto;
+}
+.s-meter{display:flex;align-items:center;justify-content:space-between}
+.s-count{font-size:13px;font-weight:500;color:#1F2937;font-variant-numeric:tabular-nums}
+.s-time{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:600;color:#101828;font-variant-numeric:tabular-nums}
+.s-time svg{width:18px;height:18px;display:block}
+
+.segs{display:flex;gap:9px;margin-top:11px}
+.segs i{flex:1;height:5px;border-radius:3px;background:#E6EAF0;overflow:hidden;position:relative}
+.segs i::after{
+  content:'';position:absolute;inset:0;width:0;border-radius:3px;background:var(--azure);
+  transition:width .45s var(--ease);
+}
+.segs i.on::after{width:100%}
+
+.tags{display:flex;align-items:center;gap:12px;margin-top:20px;min-height:22px}
+.tag-pill{
+  background:#FBF1DC;color:#7D5312;font-size:11px;font-weight:600;
+  border-radius:999px;padding:4px 11px;letter-spacing:.1px;
+}
+.tag-topic{color:var(--azure-text);font-size:13px;font-weight:500}
+
+.s-q{
+  margin:10px 0 0;font-size:16px;line-height:1.45;font-weight:700;color:var(--ink);
+}
+
+.s-opts{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+.s-opt{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  border:1px solid #E7EAEF;border-radius:10px;padding:12px 13px;background:#fff;
+  font-family:inherit;cursor:pointer;
+  transition:border-color .2s var(--ease),background .2s var(--ease),transform .2s var(--spring),box-shadow .2s var(--ease);
+  animation:optIn .4s var(--ease) backwards;
+}
+@keyframes optIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.s-opt:nth-child(1){animation-delay:.04s}.s-opt:nth-child(2){animation-delay:.10s}
+.s-opt:nth-child(3){animation-delay:.16s}.s-opt:nth-child(4){animation-delay:.22s}
+.s-opt .k{
+  width:26px;height:26px;border-radius:50%;background:#E9F1FD;color:#3E4A5C;
+  font-size:13px;font-weight:600;display:grid;place-items:center;flex:0 0 auto;
+  transition:background .2s var(--ease),color .2s var(--ease);
+}
+.s-opt .v{font-size:14px;color:#1F2937;line-height:1.35}
+
+.s-opt:active{transform:scale(.99)}
+.s-opt.sel{border-color:var(--azure-text);background:#F1F7FF;box-shadow:0 0 0 3px rgba(10,132,255,.10)}
+.s-opt.sel .k{background:var(--azure);color:#fff}
+
+/* thumb-zone gap: this space is reach, not slack — leave it */
+.s-spacer{flex:1;min-height:24px}
+
+.report{
+  text-align:center;font-size:12px;color:#8C4340;text-decoration:underline;
+  text-underline-offset:2px;cursor:pointer;margin-bottom:6px;
+  min-height:44px;display:flex;align-items:center;justify-content:center;
+}
+
+.s-nav{display:flex;align-items:center;gap:12px}
+.s-prev{
+  width:44px;height:44px;border-radius:50%;border:1px solid #E4E9F0;background:#fff;
+  display:none;place-items:center;cursor:pointer;flex:0 0 auto;
+  transition:transform .25s var(--spring),border-color .25s var(--ease);
+  animation:pop .35s var(--spring);
+}
+.s-prev.show{display:grid}
+.s-prev svg{width:16px;height:16px;stroke:#6B7787;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.s-prev:active{transform:scale(.9)}
+.s-next{
+  flex:1;height:52px;border:0;border-radius:999px;background:var(--azure);
+  color:#fff;font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;
+  box-shadow:0 6px 18px rgba(10,132,255,.32);position:relative;overflow:hidden;
+  transition:transform .28s var(--spring),box-shadow .28s var(--ease);
+}
+
+.s-next:active{transform:scale(.97);transition:transform .1s ease}
+
+.s-stage{display:flex;flex-direction:column;flex:1;min-height:0;transition:opacity .24s var(--ease),transform .24s var(--ease)}
+.s-stage.out-left{opacity:0;transform:translateX(-26px)}
+.s-stage.out-right{opacity:0;transform:translateX(26px)}
+
+/* ══════════════════════════════════════════════
+   RESULT  (screen 5)
+   ══════════════════════════════════════════════ */
+.result-layer{
+  position:absolute;inset:0;z-index:30;
+  background:linear-gradient(180deg,#FFFFFF 0%,#F5FAFF 38%,#E9F2FC 100%);
+  display:flex;flex-direction:column;padding:16px 18px 20px;
+  opacity:0;visibility:hidden;transform:translateY(18px);
+  transition:opacity .4s var(--ease),transform .4s var(--ease),visibility .4s;
+  overflow-y:auto;
+}
+.phone.result-open .result-layer{opacity:1;visibility:visible;transform:none}
+
+.r-bar{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.r-bar button{position:relative;background:none;border:0;padding:0;cursor:pointer;display:grid;place-items:center;width:44px;height:44px;margin:-9px}
+.r-bar svg{width:20px;height:20px;stroke:#2B3646;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.r-bar h2{margin:0 auto;font-size:15px;font-weight:600;color:var(--ink)}
+
+.r-check{
+  width:60px;height:60px;border-radius:50%;background:var(--ok);margin:2px auto 0;
+  display:grid;place-items:center;box-shadow:0 8px 22px rgba(34,181,115,.30);
+  animation:pop .55s var(--spring) .1s backwards;
+}
+.r-check svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.r-score{
+  margin:10px auto 0;display:inline-flex;align-items:center;gap:5px;
+  background:#fff;border:1px solid #E6EEF7;border-radius:999px;padding:6px 15px;
+  font-size:14px;font-weight:600;color:var(--ink);
+  box-shadow:0 2px 8px rgba(16,24,40,.05);
+  animation:pop .45s var(--spring) .28s backwards;
+}
+.r-score b{color:#15803D;font-weight:700}
+.r-head{
+  margin:10px auto 0;max-width:290px;text-align:center;
+  font-size:17px;font-weight:700;line-height:1.4;color:var(--ink);
+  animation:rise .5s var(--ease) .36s backwards;
+}
+  width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid #EFF3F8;
+  display:grid;place-items:center;box-shadow:0 2px 6px rgba(16,24,40,.06);
+  animation:pop .45s var(--spring) backwards;
+}
+
+.r-insight{
+  margin-top:14px;background:#E8F2FD;border-radius:12px;padding:11px 14px;
+  font-size:13px;line-height:1.5;color:#374151;
+  animation:rise .5s var(--ease) .86s backwards;
+}
+.r-insight b{color:var(--azure-text);font-weight:600}
+
+.r-next{
+  margin-top:10px;background:#fff;border-radius:14px;padding:11px;
+  box-shadow:0 2px 10px rgba(16,24,40,.06);
+  animation:rise .5s var(--ease) .92s backwards;
+}
+.r-next .row{display:flex;align-items:center;gap:12px}
+.r-next .ic{width:46px;height:46px;border-radius:10px;background:#EAF2FC;display:grid;place-items:center;flex:0 0 auto}
+.r-next .ic svg{width:24px;height:24px}
+.r-next .t{font-size:15px;font-weight:700;color:var(--ink)}
+.r-next .s{font-size:12px;color:#586170;margin-top:2px}
+.r-attempt{
+  margin-top:12px;width:100%;height:44px;border:0;border-radius:8px;background:var(--azure);
+  color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;
+  transition:transform .25s var(--spring),box-shadow .25s var(--ease);
+}
+
+.r-attempt:active{transform:scale(.97)}
+
+.r-solutions{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  margin-top:4px;min-height:40px;font-size:13px;font-weight:600;color:var(--azure-text);cursor:pointer;
+  animation:rise .5s var(--ease) .98s backwards;
+}
+.r-solutions svg{width:15px;height:15px;stroke:var(--azure);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:transform .25s var(--ease)}
+
+.r-gap{flex:1;min-height:8px}
+
+.r-tomorrow{
+  text-align:center;font-size:13px;font-style:italic;color:var(--ink);
+  position:relative;margin-bottom:10px;
+  animation:rise .5s var(--ease) 1.04s backwards;
+}
+.r-tomorrow .swoosh{display:block;margin:1px auto 0;width:96px;height:9px;margin-left:auto;margin-right:16px}
+.r-tomorrow .swoosh path{
+  fill:none;stroke:#2E86F0;stroke-width:1.6;stroke-linecap:round;
+  stroke-dasharray:110;stroke-dashoffset:110;animation:draw .8s var(--ease) 1.3s forwards;
+}
+.r-done{
+  width:100%;height:52px;border-radius:999px;background:#fff;border:1.5px solid var(--azure);
+  color:var(--azure-text);font-family:inherit;font-size:16px;font-weight:600;cursor:pointer;
+  transition:all .25s var(--ease);
+  animation:rise .5s var(--ease) 1.1s backwards;
+}
+
+.r-done:active{transform:scale(.97)}
+
+/* ══════════════════════════════════════════════
+   CLASSIC / REFINED  — the two builds, switchable
+   ══════════════════════════════════════════════ */
+.opt-preview{
+  margin-top:8px;display:flex;align-items:center;gap:10px;
+  border:1px solid #E4EAF3;border-radius:10px;padding:9px 12px;background:#fff;
+}
+.opt-preview .label{font-size:13px;color:#4A5A72}
+.phone.ui-refined .opt-preview{display:none}
+.phone.ui-refined .cta{margin-top:18px}
+.phone.ui-classic .cta{margin-top:20px}
+
+/* classic carried the same weight on every card, which is what flattened the CTA */
+.phone.ui-classic .tile,
+.phone.ui-classic .cat{box-shadow:0 1px 3px rgba(19,27,99,.05),0 6px 18px rgba(19,27,99,.05)}
+.phone.ui-classic .ready{box-shadow:0 1px 3px rgba(19,27,99,.05),0 6px 18px rgba(19,27,99,.05)}
+.phone.ui-classic .quiz{box-shadow:0 2px 6px rgba(19,27,99,.06),0 14px 34px rgba(19,27,99,.11)}
+
+/* ══════════════════════════════════════════════
+   STREAK CHIP  — number carries length, flame carries today
+   ══════════════════════════════════════════════ */
+.streak-chip{
+  position:absolute;right:14px;top:-9px;z-index:3;
+  display:flex;align-items:center;gap:5px;
+  height:44px;padding:0 8px;border:0;background:none;cursor:pointer;
+  font-family:inherit;font-size:13px;font-weight:700;color:#414E60;
+  font-variant-numeric:tabular-nums;
+  transition:transform .25s var(--spring);
+}
+.streak-chip:active{transform:scale(.92)}
+.streak-chip .fl{width:17px;height:17px;display:block;transform-origin:50% 78%}
+/* today NOT done: hollow outline flame — shape, not just colour, carries the state */
+.streak-chip .fl .fill{display:none}
+.streak-chip .fl .line{display:block;fill:none;stroke:#8E9BAB;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+/* today done: solid, lit */
+.streak-chip.lit .fl .fill{display:block}
+.streak-chip.lit .fl .line{display:none}
+.streak-chip.lit{color:#A8560B}
+/* alive but unattempted late in the day */
+.streak-chip.risk .fl .line{stroke:#C9821F}
+.streak-chip.risk{color:#8A6216}
+.streak-chip.risk .fl{animation:riskNudge 2.6s var(--ease) 3}
+@keyframes riskNudge{
+  0%,100%{transform:rotate(0) scale(1)}
+  45%{transform:rotate(-8deg) scale(1.12)}
+  70%{transform:rotate(4deg) scale(1)}
+}
+/* a milestone is the one time it should be loud */
+.streak-chip.milestone{color:#A8560B}
+.streak-chip.milestone .fl{animation:pop .5s var(--spring) 3}
+.streak-chip .ms{
+  font-size:11px;font-weight:600;color:#A8560B;background:#FFF1DF;
+  border-radius:999px;padding:2px 7px;margin-left:2px;
+}
+.phone:not(.milestone) .streak-chip .ms{display:none}
+
+/* the flame breathes while today is still open, then fills when it is earned.
+   Both are state markers — neither loops forever. */
+.streak-chip .fl .line{animation:ember 2.6s var(--ease) 3}
+@keyframes ember{
+  0%,100%{opacity:.75;transform:translateY(0) scale(1)}
+  45%{opacity:1;transform:translateY(-.5px) scale(1.06)}
+}
+.streak-chip.lit .fl .line{animation:none}
+.streak-chip .fl .fill{clip-path:inset(0 0 0 0)}
+/* completion: the flame fills from the base, the way a flame actually catches */
+.streak-chip.filling .fl .fill{animation:catchFire .62s var(--ease) forwards}
+@keyframes catchFire{
+  0%{clip-path:inset(100% 0 0 0)}
+  100%{clip-path:inset(0 0 0 0)}
+}
+.streak-chip.filling .fl{animation:flameJump .62s var(--spring)}
+@keyframes flameJump{
+  0%{transform:scale(.8)}55%{transform:scale(1.28)}100%{transform:scale(1)}
+}
+/* the number rolls up as it increments, so the change is seen and not just read */
+.streak-word{display:inline-block}
+.streak-word.roll{animation:rollUp .5s var(--ease)}
+@keyframes rollUp{
+  0%{transform:translateY(0);opacity:1}
+  40%{transform:translateY(-9px);opacity:0}
+  41%{transform:translateY(9px)}
+  100%{transform:translateY(0);opacity:1}
+}
+
+.qmeta .shield{width:13px;height:13px;stroke:#B07C1E;fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.qmeta.grace{color:#8A6216}
+.ws-day.graced i{background:#FFF8EC;border:1.5px dashed #E3B876}
+.first-time{
+  margin:14px auto 0;max-width:280px;text-align:center;
+  font-size:12px;line-height:1.5;color:#414E60;
+  background:#F1F7FE;border-radius:10px;padding:9px 12px;
+  animation:rise .5s var(--ease) .9s backwards;
+}
+
+/* day 0 only: the spec answers "what is this", then rolls once to the reason.
+   One roll, then it rests — a line that keeps rotating becomes a carousel and stops being read. */
+.qmeta{position:relative;overflow:hidden;height:20px}
+.qmeta .m{
+  position:absolute;left:0;right:0;top:0;
+  height:20px;line-height:20px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:transform .42s var(--ease),opacity .42s var(--ease);
+}
+.qmeta .m2{transform:translateY(20px);opacity:0}
+.qmeta.rolled .m1{transform:translateY(-20px);opacity:0}
+.qmeta.rolled .m2{transform:translateY(0);opacity:1}
+.qmeta .m2 b{color:#414E60;font-weight:600}
+@media (prefers-reduced-motion:reduce){
+  .qmeta .m1{display:none}
+  .qmeta .m2{transform:none;opacity:1}
+}
+
+/* day 0: the pill says what it is, then what to do — ending on the action */
+/* day 0: both lines sit in the pill — the label above, the action below */
+.proll{display:flex;flex-direction:column;align-items:flex-start;line-height:1}
+.pr{white-space:nowrap;display:block}
+.pr.r1{font-size:11px;font-weight:600;font-style:normal;opacity:.82;letter-spacing:.2px}
+.pr.r2{font-size:14px;font-weight:700;margin-top:2px}
+/* once a streak exists the pill collapses back to one line: flame + count */
+.phone:not(.day0):not(.lapsed) .pr.r2{display:none}
+.phone:not(.day0):not(.lapsed) .pr.r1{font-size:14px;font-weight:700;font-style:italic;opacity:1}
+/* with no streak the pill is the only ask left on screen once the card scrolls away,
+   so on day 0 it stops being a landmark and becomes the button */
+.phone.day0 .hpill,.phone.lapsed .hpill{
+  height:46px;padding:0 10px 0 16px;align-items:center;
+  background:linear-gradient(180deg,#2273DC,#1A5FC0);
+  border-color:transparent;color:#fff;
+  box-shadow:0 4px 14px rgba(26,95,192,.34);
+}
+.phone.day0 .hpill .pflame,.phone.lapsed .hpill .pflame{display:none}
+.phone.day0 .hpill .cv,.phone.lapsed .hpill .cv{stroke:rgba(255,255,255,.85)}
+@media (prefers-reduced-motion:reduce){
+}
+
+.r-streak-line{
+  display:flex;align-items:center;justify-content:center;gap:7px;margin-top:10px;
+  font-size:13px;font-weight:600;color:#8A5A12;
+}
+.r-streak-line .flame{width:15px;height:15px;animation:none}
+
+/* ── week sheet: history lives one tap away, not on the card ── */
+.week-sheet{
+  position:absolute;inset:0;z-index:40;display:flex;align-items:flex-end;
+  background:rgba(16,24,40,.34);
+  opacity:0;visibility:hidden;transition:opacity .28s var(--ease),visibility .28s;
+}
+.phone.week-open .week-sheet{opacity:1;visibility:visible}
+.ws-card{
+  width:100%;background:#fff;border-radius:20px 20px 0 0;
+  padding:10px 18px calc(20px + env(safe-area-inset-bottom,0px));
+  transform:translateY(100%);transition:transform .3s var(--ease);
+}
+.phone.week-open .ws-card{transform:none}
+.ws-grab{width:36px;height:4px;border-radius:4px;background:#D7DFE9;margin:0 auto 14px}
+.ws-title{font-size:16px;font-weight:700;color:var(--ink);text-align:center;display:flex;
+  align-items:center;justify-content:center;gap:7px}
+.ws-title .fl{width:19px;height:19px}
+.ws-sub{font-size:12px;color:var(--muted);text-align:center;margin-top:4px}
+.ws-days{display:flex;justify-content:space-between;margin:18px 4px 0}
+.ws-day{display:flex;flex-direction:column;align-items:center;gap:7px;flex:1}
+.ws-day span{font-size:11px;color:var(--muted-2)}
+.ws-day i{width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
+.ws-day i svg{width:12px;height:13px}
+.ws-day.done i{background:#FFF3E6;border:1px solid #FBDCB6}
+.ws-day.missed i{background:#fff;border:1.5px solid #E3E9F1}
+.ws-day.missed i::after{content:'';width:8px;height:1.5px;background:#C3CBD6;border-radius:2px}
+.ws-day.today i{background:#fff;border:1.5px dashed #9FC6F3}
+.ws-day.future i{background:#F4F7FB;border:1px solid #EDF1F7}
+.ws-day.future span,.ws-day.future i{opacity:.55}
+.ws-note{margin-top:16px;font-size:12px;color:var(--muted);text-align:center}
+.ws-close{
+  margin-top:16px;width:100%;height:46px;border-radius:999px;border:1.5px solid var(--azure-text);
+  background:#fff;color:var(--azure-text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;
+}
+.ws-close:active{transform:scale(.97)}
+
+
+/* ══════════════════════════════════════════════
+   META LINE + SOCIAL PROOF  (attempt-rate work)
+   ══════════════════════════════════════════════ */
+
+/* presence line — the only fact on the card that changes hour to hour */
+.subline{
+  margin-top:8px;min-height:21px;display:flex;align-items:center;justify-content:center;gap:8px;
+  font-size:12px;color:#5B6878;
+}
+.presence{display:flex;align-items:center;gap:8px}
+.faces{display:flex;align-items:center;flex:0 0 auto}
+.faces i{
+  width:19px;height:19px;border-radius:50%;overflow:hidden;flex:0 0 auto;
+  border:1.5px solid #fff;box-shadow:0 1px 3px rgba(19,27,99,.16);
+  margin-left:-7px;background:#EAF2FC;
+  animation:faceIn .45s var(--spring) backwards;
+}
+.faces i:first-child{margin-left:0}
+.faces i:nth-child(1){animation-delay:.55s}
+.faces i:nth-child(2){animation-delay:.63s}
+.faces i:nth-child(3){animation-delay:.71s}
+.faces i svg{display:block;width:100%;height:100%}
+@keyframes faceIn{
+  0%{opacity:0;transform:translateX(-6px) scale(.6)}
+  100%{opacity:1;transform:none}
+}
+.ptext{white-space:nowrap}
+.ptext b{color:#414E60;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ── resume: a half-finished quiz is the warmest state there is (Zeigarnik) ── */
+.resume-bar{
+  display:none;align-items:center;gap:8px;margin-top:8px;
+}
+.phone.midway .resume-bar{display:flex}
+.resume-bar .track{flex:1;height:4px;border-radius:4px;background:#E6EBF2;overflow:hidden}
+.resume-bar .track i{display:block;height:100%;border-radius:4px;background:var(--blue);
+  width:0;transition:width .5s var(--ease)}
+.resume-bar .lbl{font-size:12px;font-weight:600;color:#414E60;white-space:nowrap}
+/* while a quiz is midway the crowd is irrelevant — the user's own unfinished task is the pull */
+.phone.midway .subline{display:none}
+.phone.midway 
+.phone.day0 /* day 0 is the one state with two live blockers — and the one with room for both */
+.presence{display:flex;align-items:center;gap:8px}
+.phone.evening /* a lapsed student has no chain either, but the crowd is the stronger pull for them */
+.phone.lapsed .phone.lapsed .faces,
+.phone.lapsed .live,
+.phone.lapsed .ptext{display:flex}
+.phone.lapsed .ptext{display:inline}
+/* liveness is carried by the pulse, not by colour — a lone saturated green dot was
+   scoring as the most salient element on the whole screen, above the CTA */
+.live{
+  width:6px;height:6px;border-radius:50%;background:#98A6B8;flex:0 0 auto;
+  box-shadow:0 0 0 0 rgba(152,166,184,.5);
+  animation:liveDot 2.2s var(--ease) 3;
+}
+@keyframes liveDot{
+  0%,100%{box-shadow:0 0 0 0 rgba(152,166,184,.5)}
+  55%{box-shadow:0 0 0 5px rgba(152,166,184,0)}
+}
+
+/* pill carries the streak once the card is gone */
+.hpill .pflame{width:13px;height:14px;flex:0 0 auto}
+.hpill .pcount{font-variant-numeric:tabular-nums}
+
+/* ══════════════════════════════════════════════
+   POST-ATTEMPT HOME STATE
+   ══════════════════════════════════════════════ */
+.phone:not(.attempted) .post{display:none!important}
+.phone.attempted .pre{display:none!important}
+
+/* faint diagonal bands behind the top of the post-attempt home */
+.home .stripes{
+  position:absolute;top:0;left:0;right:0;height:470px;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(-45deg,
+    rgba(126,192,250,.16) 0 13px,
+    rgba(126,192,250,0) 13px 46px);
+  -webkit-mask-image:linear-gradient(160deg,#000 0%,rgba(0,0,0,.35) 42%,transparent 72%);
+  mask-image:linear-gradient(160deg,#000 0%,rgba(0,0,0,.35) 42%,transparent 72%);
+  opacity:0;transition:opacity .5s var(--ease);
+}
+.phone.attempted .home .stripes{opacity:1}
+.home > .stripes{z-index:0}
+.home-pinned > *:not(.streak-chip){position:relative;z-index:1}
+
+.head-post h1{
+  margin:0;font-size:17px;font-weight:700;font-style:italic;color:#0F1729;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.head-post h1 svg{width:15px;height:17px}
+.qmeta{
+  margin:3px 0 0;display:flex;justify-content:center;align-items:center;gap:6px;
+  font-size:12px;font-weight:400;font-style:normal;color:var(--muted);
+}
+.qmeta .flame{width:12px;height:13px}
+.qmeta b{font-weight:600;color:#414E60}
+.qmeta .dot{color:#A9B3C0}
+.head-post p{margin:4px 0 0;font-size:16px;font-weight:700;font-style:italic;color:var(--blue-text)}
+
+/* stacked-deck edges peeking above the card */
+.deck{position:relative;margin-top:2px}
+.deck::before,.deck::after{
+  content:'';position:absolute;left:14px;right:14px;top:-7px;height:20px;
+  background:#fff;border-radius:16px;box-shadow:0 -2px 6px rgba(19,27,99,.05);z-index:0;
+}
+.deck::after{left:24px;right:24px;top:-13px;opacity:.75}
+
+.done-card{
+  position:relative;z-index:1;background:#fff;border-radius:18px;
+  padding:16px 14px 12px;
+  box-shadow:0 2px 6px rgba(19,27,99,.05),0 14px 34px rgba(19,27,99,.09);
+  animation:rise .55s var(--ease) backwards;
+}
+.done-inner{
+  border:0;border-radius:14px;padding:16px 12px 14px;text-align:center;
+  background:linear-gradient(180deg,#FFFFFF,#FBFDFF);
+}
+.done-check{
+  width:46px;height:46px;border-radius:50%;background:var(--ok);margin:0 auto;
+  display:grid;place-items:center;box-shadow:0 6px 16px rgba(34,181,115,.32);
+  animation:pop .5s var(--spring) .15s backwards;
+}
+.done-check svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.done-score{margin-top:11px;font-size:13px;font-weight:600;color:#1F2937}
+.done-score b{color:#15803D;font-weight:700}
+  width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid #EFF3F8;
+  display:grid;place-items:center;box-shadow:0 2px 6px rgba(16,24,40,.07);
+  animation:pop .45s var(--spring) backwards;
+}
+.done-sol{
+  position:relative;margin-top:8px;font-size:13px;font-weight:600;color:var(--blue-text);cursor:pointer;
+  display:inline-block;position:relative;
+}
+.done-sol::after{content:'';position:absolute;left:0;bottom:-1px;height:1.5px;width:0;background:var(--blue);transition:width .28s var(--ease)}
+
+.done-dots{display:flex;gap:5px;justify-content:center;margin-top:14px}
+.done-dots i{width:6px;height:6px;border-radius:6px;background:#D9E2ED}
+.done-dots i.on{width:18px;background:var(--blue)}
+
+.target-row .more.drop svg{transition:transform .25s var(--ease)}
+
+/* ── prototype controls (review only — not part of the design) ── */
+.devbar{
+  position:fixed;left:14px;right:14px;bottom:14px;flex-wrap:wrap;justify-content:center;z-index:200;
+  display:flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.92);border:1px solid #E2E9F2;border-radius:999px;
+  padding:5px 7px;box-shadow:0 6px 20px rgba(19,27,99,.12);
+  font-size:11px;
+}
+.devbar span{color:#6B7787;padding:0 4px;letter-spacing:.3px;text-transform:uppercase;font-size:9.5px}
+.devbar button{
+  font-family:inherit;font-size:11px;font-weight:600;color:#5B6B82;cursor:pointer;
+  border:1px solid #E2E9F2;background:#fff;border-radius:999px;padding:4px 9px;
+  transition:all .2s var(--ease);
+}
+.devbar button:hover{border-color:#9CC6F7;color:var(--blue-text)}
+.devbar button.on{background:var(--blue);border-color:var(--blue-text);color:#fff}
+
+/* a "+1" that rises when a real attempt lands */
+.bump{
+  position:absolute;font-size:11px;font-weight:700;color:#22B573;
+  pointer-events:none;animation:bumpUp 1.1s var(--ease) forwards;
+}
+@keyframes bumpUp{
+  0%{opacity:0;transform:translateY(4px)}
+  25%{opacity:1;transform:translateY(-2px)}
+  100%{opacity:0;transform:translateY(-14px)}
+}
+.live.beat{animation:liveDot 1s var(--ease) 1}
+.subline{position:relative}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+<div class="phone" id="phone">
+
+  <!-- ══════════ HOME ══════════ -->
+  <div class="home" id="home">
+   <div class="stripes"></div>
+
+    <div class="topbar rise d1">
+      <div class="burger" aria-label="Menu"><span></span><span></span><span></span></div>
+      <div class="avatar" aria-label="Profile">
+        <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" fill="#EAF2FC"/>
+          <circle cx="20" cy="15" r="7.4" fill="#3A2C24"/>
+          <circle cx="20" cy="16.5" r="5.6" fill="#E8B893"/>
+          <path d="M12.6 14.5c0-4.2 3.1-7.4 7.4-7.4s7.4 3.2 7.4 7.4c-2.2-1.1-4-3-4-3s-2.6 2.6-10.8 3z" fill="#3A2C24"/>
+          <path d="M8 40c1.4-7.2 6-11 12-11s10.6 3.8 12 11z" fill="#1F2C55"/>
+          <path d="M20 29c2 0 3.4 1.2 3.4 1.2L20 34l-3.4-3.8S18 29 20 29z" fill="#F2F5FA"/>
+        </svg>
+      </div>
+      <div class="pill-slot">
+        <button class="hpill" id="hpill">
+          <svg class="pflame flame" viewBox="0 0 24 26"><path d="M13 .5s1.2 4-2.4 7C7 10.6 5 13 5 16.4A8 8 0 0021 17c0-4.2-2.6-6.3-3.7-9.4-.6 1.4-1.6 2.3-1.6 2.3S16.4 4.6 13 .5z" fill="#F97316"/><path d="M12.6 11.6s.7 2.4-1.3 4c-1.6 1.4-2.3 2.6-2.3 4.2a4.5 4.5 0 009 .2c0-2.3-1.6-3.6-2.3-5.3-.6 1-1 1.5-1 1.5s.5-2.9-2.1-4.6z" fill="#FBBF24"/></svg>
+          <span class="proll" id="pillRoll">
+            <span class="pr r1" id="pillLabel">Day 12</span>
+            <span class="pr r2">Attempt now</span>
+          </span>
+          <svg class="cv" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+      <div class="top-actions">
+        <button class="icon-btn" aria-label="Search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+        </button>
+        <button class="icon-btn" aria-label="Community">
+          <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.3 2.8-5 5.5-5s4.9 1.7 5.5 5"/><path d="M16.5 6.6a3 3 0 010 5.4M18.5 19c-.3-1.9-1-3.3-2-4.2"/></svg>
+        </button>
+      </div>
+    </div>
+
+   <div class="home-pinned">
+    <button class="streak-chip" id="streakChip" aria-label="Streak">
+      <svg class="fl" viewBox="0 0 24 24">
+        <g class="fill"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 002.5 2.5z" fill="#F97316"/><path d="M12 20.6a3.5 3.5 0 01-3.5-3.5c0-1.2.7-2.1 1.6-3 .4 1 1.2 1.6 1.9 1.6 1.1 0 1.8-.8 1.8-1.9 1.1 1.1 1.7 2.1 1.7 3.3a3.5 3.5 0 01-3.5 3.5z" fill="#FBBF24"/></g>
+        <path class="line" d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 002.5 2.5z"/>
+      </svg>
+      <span id="streakCount" class="streak-word">12</span><span class="ms">Day 7!</span>
+    </button>
+
+    <div class="head head-post rise d2">
+      <h1>Quizzes
+        <svg viewBox="0 0 14 17"><path d="M8.6.5L1.4 9.4h4.2L5.2 16.5l7.4-9.1H8.2z" fill="#2E86F0"/></svg>
+      </h1>
+      <div class="qmeta" id="qmeta"></div>
+    </div>
+
+    <!-- post-attempt summary: the chip above already carries the streak, so this
+         card only reports the score -->
+    <div class="deck post">
+      <div class="done-card">
+        <div class="done-inner">
+          <div class="done-check"><svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></svg></div>
+          <div class="done-score"><b id="homeScore">3 of 3</b> correct</div>
+          <div class="done-sol">View solutions</div>
+        </div>
+        <div class="done-dots"><i class="on"></i><i></i><i></i></div>
+      </div>
+    </div>
+
+    <div class="quiz rise d3 pre">
+      <div class="quiz-body">
+        <p class="qtext"><span class="qno">Q.1</span> In Acute MI, which artery occlusion most commonly causes anterior wall STEMI?</p>
+        <div class="opt-preview">
+          <span class="badge">A</span>
+          <span class="label">Right coronary artery (RCA)</span>
+        </div>
+        <button class="cta" id="startBtn">
+          <svg viewBox="0 0 24 24"><path d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5"/><path d="M18.4 3.6a1.9 1.9 0 012.7 2.7L12.5 15l-3.6.9.9-3.6z"/></svg>
+          Attempt now
+        </button>
+        <div class="resume-bar">
+          <span class="lbl" id="resumeLbl">1 of 3 done</span>
+          <span class="track"><i id="resumeFill"></i></span>
+        </div>
+        <!-- one motivation at a time: the streak if they have one, the crowd if they don't -->
+        <div class="subline">
+          <span class="presence">
+          <span class="faces">
+            <i><svg viewBox="0 0 20 20"><rect width="20" height="20" fill="#F3E3D3"/><circle cx="10" cy="7.6" r="4.1" fill="#3A2A20"/><circle cx="10" cy="8.4" r="3.2" fill="#E8B893"/><path d="M2.5 20c.8-4.3 3.6-6.4 7.5-6.4s6.7 2.1 7.5 6.4z" fill="#2F5FA8"/></svg></i>
+            <i><svg viewBox="0 0 20 20"><rect width="20" height="20" fill="#E7F0F8"/><circle cx="10" cy="7.6" r="4.1" fill="#1E1712"/><circle cx="10" cy="8.4" r="3.2" fill="#C98F63"/><path d="M2.5 20c.8-4.3 3.6-6.4 7.5-6.4s6.7 2.1 7.5 6.4z" fill="#17A2B8"/></svg></i>
+            <i><svg viewBox="0 0 20 20"><rect width="20" height="20" fill="#F6ECEC"/><circle cx="10" cy="7.6" r="4.1" fill="#4A3020"/><circle cx="10" cy="8.4" r="3.2" fill="#EFC49F"/><path d="M2.5 20c.8-4.3 3.6-6.4 7.5-6.4s6.7 2.1 7.5 6.4z" fill="#5B6BD6"/></svg></i>
+          </span>
+          <span class="live"></span>
+          <span class="ptext"><b id="proofCount">0</b> nurses attempted today</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+   </div><!-- /home-pinned -->
+
+   <div class="home-scroll">
+
+    <div class="tile rise d4">
+      <div class="thumb">
+        <svg viewBox="0 0 88 62" width="88" height="62" xmlns="http://www.w3.org/2000/svg">
+          <rect width="88" height="62" fill="#DCE9F7"/>
+          <circle cx="44" cy="20" r="24" fill="#C9DDF2" opacity=".55"/>
+          <path d="M22 62c0-11.5 9.9-18 22-18s22 6.5 22 18z" fill="#151D34"/>
+          <rect x="40.5" y="30" width="7" height="10" rx="3.5" fill="#E0AC85"/>
+          <circle cx="44" cy="26" r="10.5" fill="#E8B893"/>
+          <path d="M33.5 25.5a10.5 10.5 0 0121 0c0 1-.3 2-.3 2-1.4-2.4-3.4-4.6-3.4-4.6s-4.2 3.4-17 3.6z" fill="#2A1C16"/>
+          <rect x="40" y="49" width="8" height="2.2" rx="1.1" fill="#fff" opacity=".85"/>
+        </svg>
+        <span class="play-b"><svg viewBox="0 0 12 12"><path d="M2 1l9 5-9 5z"/></svg></span>
+      </div>
+      <div class="body">
+        <div class="t">Medical Surgical<br>Nursing</div>
+        <div class="s">20hr 1m</div>
+        <div class="link">Watch now</div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+
+    <div class="tile test rise d5">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h.01M8 12h.01M8 16h.01M11.5 8H16M11.5 12H16M11.5 16H16"/></svg>
+      </div>
+      <div class="body">
+        <div class="t">Test 1 : Fundamental of Nurain..</div>
+        <div class="s">20 Ques &bull; 20min</div>
+      </div>
+      <svg class="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+    </div>
+
+    <div class="target-row rise d6">
+      <span class="lbl">My target</span>
+      <span class="tag">NORCET</span>
+      <button class="pen-btn" aria-label="Edit target">
+        <svg class="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.1 2.1 0 00-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>
+      </button>
+      <span class="more">Get 7 days <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></span>
+    </div>
+
+    <div class="ready rise d7">
+      <div class="r-top">
+        <div>
+          <div class="r-lbl">Exam readiness</div>
+          <div class="r-val" id="readyVal">66%</div>
+        </div>
+        <div class="goal"><span class="g">Goal 75%</span></div>
+      </div>
+      <div class="chart">
+        <svg viewBox="0 0 320 96" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2E86F0" stop-opacity=".22"/>
+              <stop offset="100%" stop-color="#2E86F0" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <line class="gline" x1="0" y1="26" x2="320" y2="26"/>
+          <path class="area" d="M0,76 C22,74 34,66 52,64 C74,61 84,72 104,70 C124,68 130,44 152,40 C172,36 178,42 196,40 L196,96 L0,96 Z"/>
+          <path class="spark" d="M0,76 C22,74 34,66 52,64 C74,61 84,72 104,70 C124,68 130,44 152,40 C172,36 178,42 196,40"/>
+          <path class="spark-future" d="M196,40 C224,38 240,32 258,26 C276,20 292,16 306,14"/>
+          <line class="vline" x1="196" y1="18" x2="196" y2="96"/>
+          <g class="now-dot">
+            <circle cx="196" cy="40" r="7" fill="#fff"/>
+            <circle cx="196" cy="40" r="5" fill="#2E86F0"/>
+          </g>
+          <g class="trophy-chip">
+            <circle cx="306" cy="14" r="10.5" fill="#fff" stroke="#F1DCBA" stroke-width="1.2"/>
+            <path d="M302 9h8v3.2a4 4 0 01-8 0z" fill="#E8A93B"/>
+            <rect x="305.2" y="15" width="1.6" height="2.4" fill="#E8A93B"/>
+            <rect x="303" y="17.6" width="6" height="1.4" rx=".5" fill="#E8A93B"/>
+          </g>
+        </svg>
+      </div>
+      <div class="axis">
+        <span>2 days ago</span>
+        <span>Now</span>
+        <span>Exam: Oct</span>
+      </div>
+    </div>
+
+    <!-- jobs banner -->
+    <div class="jobs rise d7">
+      <div class="jt">Latest Nursing Jobs Alerts!</div>
+      <div class="js">Don&rsquo;t miss government and private jobs updates</div>
+      <button class="jb">Check openings</button>
+      <svg class="art" viewBox="0 0 130 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="14" width="62" height="106" rx="9" fill="#fff" opacity=".96"/>
+        <rect x="17" y="22" width="48" height="8" rx="4" fill="#DCEAF9"/>
+        <rect x="17" y="36" width="48" height="20" rx="5" fill="#EDF4FC"/>
+        <rect x="17" y="61" width="48" height="12" rx="4" fill="#EDF4FC"/>
+        <rect x="17" y="78" width="48" height="12" rx="4" fill="#EDF4FC"/>
+        <rect x="17" y="95" width="30" height="8" rx="4" fill="#DCEAF9"/>
+        <circle cx="66" cy="70" r="16" fill="#19C4E0"/>
+        <path d="M60 65h12v10H60z" fill="#fff"/>
+        <path d="M63.5 65v-2.4h5V65" stroke="#fff" stroke-width="1.6" fill="none"/>
+        <path d="M84 120c0-19 7-30 20-30s20 11 20 30z" fill="#1B7FD6"/>
+        <circle cx="104" cy="76" r="11" fill="#2A1C16"/>
+        <circle cx="104" cy="78" r="9" fill="#E8B893"/>
+        <path d="M93.5 76a10.5 10.5 0 0121 0c-3-1.6-5.6-4.4-5.6-4.4S105 75 93.5 76z" fill="#2A1C16"/>
+        <path d="M99 90h10l-5 7z" fill="#fff" opacity=".9"/>
+      </svg>
+    </div>
+
+    <!-- category cards -->
+    <div class="cats">
+      <div class="cat">
+        <div class="ct">Lectures</div>
+        <div class="cs">Lakhs of practice questions.</div>
+        <div class="cgo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>
+        <svg class="cart" viewBox="0 0 72 72">
+          <rect x="14" y="20" width="44" height="36" rx="6" fill="#BBD9F7"/>
+          <rect x="10" y="16" width="44" height="36" rx="6" fill="#8FC1F2"/>
+          <circle cx="32" cy="34" r="10" fill="#fff" opacity=".95"/>
+          <path d="M29 29l8 5-8 5z" fill="#2E86F0"/>
+        </svg>
+      </div>
+      <div class="cat">
+        <div class="ct">QBank</div>
+        <div class="cs">Lakhs of practice questions.</div>
+        <div class="cgo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>
+        <svg class="cart" viewBox="0 0 72 72">
+          <rect x="14" y="20" width="44" height="36" rx="6" fill="#BBD9F7"/>
+          <rect x="10" y="16" width="44" height="36" rx="6" fill="#8FC1F2"/>
+          <text x="32" y="42" text-anchor="middle" font-family="Poppins,sans-serif" font-size="22" font-weight="700" fill="#fff">?</text>
+        </svg>
+      </div>
+      <div class="cat">
+        <div class="ct">Mock</div>
+        <div class="cs">Lakhs of practice questions.</div>
+        <div class="cgo"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>
+        <svg class="cart" viewBox="0 0 72 72">
+          <rect x="14" y="20" width="44" height="36" rx="6" fill="#BBD9F7"/>
+          <rect x="10" y="16" width="44" height="36" rx="6" fill="#8FC1F2"/>
+          <path d="M22 30h20M22 36h20M22 42h12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+   </div><!-- /home-scroll -->
+  </div><!-- /home -->
+
+  <!-- streak history: three real states, one tap away -->
+  <div class="week-sheet" id="weekSheet">
+    <div class="ws-card">
+      <div class="ws-grab"></div>
+      <div class="ws-title"><svg class="fl" viewBox="0 0 24 24"><g class="fill"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 002.5 2.5z" fill="#F97316"/><path d="M12 20.6a3.5 3.5 0 01-3.5-3.5c0-1.2.7-2.1 1.6-3 .4 1 1.2 1.6 1.9 1.6 1.1 0 1.8-.8 1.8-1.9 1.1 1.1 1.7 2.1 1.7 3.3a3.5 3.5 0 01-3.5 3.5z" fill="#FBBF24"/></g><path class="line" d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 002.5 2.5z"/></svg><span id="wsCount">12 day streak</span></div>
+      <div class="ws-sub" id="wsSub">Answer today to keep it going</div>
+      <div class="ws-days" id="wsDays"></div>
+      <div class="ws-note" id="wsNote">Longest streak: 18 days</div>
+      <button class="ws-close" id="wsClose">Close</button>
+    </div>
+  </div>
+
+  <!-- bottom tab bar -->
+  <div class="tabs">
+    <div class="tab on">
+      <svg viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1z"/></svg>
+      Home
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>
+      QBank
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 9.5l4.5 2.5-4.5 2.5z"/></svg>
+      Videos
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><path d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5"/><path d="M18.4 3.6a1.9 1.9 0 012.7 2.7L12.5 15l-3.6.9.9-3.6z"/></svg>
+      Tests
+    </div>
+    <div class="tab">
+      <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0110.5 4h3A1.5 1.5 0 0115 5.5V7"/></svg>
+      Jobs
+    </div>
+  </div>
+
+  <!-- ══════════ QUIZ SHEET ══════════ -->
+  <div class="sheet-layer" id="sheetLayer">
+    <button class="sheet-back" id="sheetBack" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
+    </button>
+
+    <div class="sheet">
+      <div class="grabber"></div>
+      <div class="s-meter">
+        <span class="s-count" id="sCount">1/3 Questions</span>
+        <span class="s-time">
+          <span id="sTime">03:00</span>
+          <svg viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="9" fill="#D6E9FF"/>
+            <path id="pie" d="M10 10 L10 1 A9 9 0 0 1 10 1 Z" fill="#0A84FF"/>
+          </svg>
+        </span>
+      </div>
+
+      <div class="segs" id="segs"><i class="on"></i><i></i><i></i></div>
+
+      <div class="s-stage" id="sStage">
+        <div class="tags" id="sTags"></div>
+        <p class="s-q" id="sQ"></p>
+        <div class="s-opts" id="sOpts"></div>
+        <div class="s-spacer"></div>
+      </div>
+
+      <div class="report" id="report">Having trouble? Report</div>
+      <div class="s-nav">
+        <button class="s-prev" id="sPrev" aria-label="Previous question">
+          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <button class="s-next" id="sNext">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ RESULT ══════════ -->
+  <div class="result-layer" id="resultLayer">
+    <div class="r-bar">
+      <button id="rBack" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/></svg></button>
+      <h2>Quiz goal: PYQ Sprint</h2>
+      <button aria-label="Share"><svg viewBox="0 0 24 24"><path d="M4 13v5a2 2 0 002 2h12a2 2 0 002-2v-5"/><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/></svg></button>
+    </div>
+
+    <div class="r-check">
+      <svg viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></svg>
+    </div>
+
+    <div style="text-align:center">
+      <span class="r-score"><b id="rScore">2 of 3</b> correct</span>
+    </div>
+
+    <div class="r-head" id="rHead">Good Attempt!! Little more effort and get all correct.</div>
+
+    <!-- shown once, on the very first completion: a lit flame means nothing to someone
+         who has never seen it unlit -->
+    <div class="first-time" id="firstTime" style="display:none">
+      You&rsquo;ve started a streak. Come back tomorrow to keep it.
+    </div>
+
+    <div class="r-streak-line">
+      <svg class="flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 002.5 2.5z" fill="#F97316"/></svg>
+      <span id="rStreak">Day 13</span>
+    </div>
+
+    <div class="r-insight"><b>The basic builds everything.</b> Get the basics solid once, and everything after feels easier.</div>
+
+    <div class="r-next">
+      <div class="row">
+        <div class="ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E86F0" stroke-width="1.6" stroke-linecap="round">
+            <path d="M8 3c0 4.5 8 5.5 8 9s-8 4.5-8 9"/>
+            <path d="M16 3c0 4.5-8 5.5-8 9s8 4.5 8 9"/>
+            <path d="M9.6 6.2h4.8M8.3 9.4h7.4M8.3 14.6h7.4M9.6 17.8h4.8"/>
+          </svg>
+        </div>
+        <div>
+          <div class="t">Anatomical Terms</div>
+          <div class="s">26 Questions</div>
+        </div>
+      </div>
+      <button class="r-attempt">Attempt now</button>
+    </div>
+
+    <div class="r-solutions">View solutions <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></div>
+
+    <div class="r-gap"></div>
+
+    <div class="r-tomorrow">
+      Tomorrow again. Just 2 minutes.
+      <svg class="swoosh" viewBox="0 0 96 9"><path d="M2 6.5C18 2.5 44 1.5 62 3.2 76 4.6 86 6 94 7"/></svg>
+    </div>
+    <button class="r-done" id="rDone">Done</button>
+  </div>
+
+</div>
+</div>
+
+<div class="devbar">
+  <span>Build</span>
+  <button data-ui="refined">Refined</button>
+  <button data-ui="classic">Classic</button>
+  <span>Day</span>
+  <button data-day="0">0</button>
+  <button data-day="1">1</button>
+  <button data-day="2">2</button>
+  <button data-day="3">3</button>
+  <button data-day="4">4</button>
+  <button data-day="5">5</button>
+  <button data-day="6">6</button>
+  <button data-day="7">7</button>
+  <span>Then</span>
+  <button data-flag="done">Attempted</button>
+  <button data-flag="risk">Evening</button>
+  <button data-flag="miss">Missed a day</button>
+</div>
+
+<script>
+(function(){
+  var QUESTIONS = [
+    {
+      tags: ['NORCET 2025', 'MI- the artery'],
+      q: 'Q1. In Acute MI, which artery occlusion most commonly causes anterior wall STEMI?',
+      opts: ['Right coronary artery (RCA)','Left anterior descending (LAD)','Left circumflex (LCx)','Posterior descending artery'],
+      answer: 1
+    },
+    {
+      tags: ['MI- the artery'],
+      q: 'Q2. A client on furosemide reports muscle weakness and leg cramps. Which imbalance is suspected first?',
+      opts: ['Hypernatraemia','Hypocalcaemia','Hypokalaemia','Hyperphosphataemia'],
+      answer: 2
+    },
+    {
+      tags: ['NORCET 2025', 'MI- the artery'],
+      q: 'Q3. Which position is correct for a client immediately after a lumbar puncture?',
+      opts: ['Flat supine for 4-6 hours','High Fowler’s position','Left lateral, knees drawn up','Trendelenburg position'],
+      answer: 0
+    }
+  ];
+  var LETTERS = ['A','B','C','D'];
+  var TOTAL = QUESTIONS.length;
+
+  /* ── habit state ──────────────────────────────
+     Swap these to review the variants, or append
+     ?state=day0 / ?state=evening to the URL.      */
+  var HABIT = {
+    streak: 12,        // days already earned — a count, so it scales past 7
+    doneToday: false,  // flame is hollow until this flips
+    sessions: 9,       // how many times they have seen the block — drives spec decay
+    milestone: false,
+    // Mon..Sun; 'today' is the open slot, anything after it is 'future'
+    week: ['done','done','missed','done','done','done','today'],
+    longest: 18,
+    attemptedToday: 243,     // real count only — never a fake ticker
+    evening: false           // true once the streak is at risk
+  };
+  var Q = location.search;
+  // two builds in one file: 'classic' is the version before the final design pass
+  var UI = /ui=classic/.test(Q) ? 'classic' : 'refined';
+  var day    = Math.max(0, Math.min(30, parseInt((Q.match(/day=(\d+)/) || [])[1] ?? '12', 10)));
+  var didToday = /done=1/.test(Q);
+  var wantRisk = /risk=1/.test(Q);
+  var missed   = /miss=1/.test(Q);
+
+  HABIT.streak      = day;
+  HABIT.doneToday   = didToday;
+  HABIT.grace       = missed;          // a miss absorbed by the weekly grace
+  HABIT.graceLeft   = missed ? 0 : 1;
+  // loss aversion has nothing to bite on below ~4 days, so at-risk stays off until then
+  HABIT.evening     = wantRisk && day >= 4 && !didToday;
+  HABIT.milestone   = didToday && day >= 7 && day % 7 === 0;
+  HABIT.firstEver   = day === 0;
+
+  // last seven days, today last
+  HABIT.week = [];
+  for(var i = 6; i >= 1; i--){
+    var earned = (7 - i) <= day;
+    HABIT.week[6 - i] = earned ? 'done' : 'future';
+  }
+  if(missed && day >= 2) HABIT.week[4] = 'graced';
+  HABIT.week[6] = didToday ? 'done' : 'today';
+
+  var phone   = document.getElementById('phone');
+  var startBtn= document.getElementById('startBtn');
+  var sheetBack= document.getElementById('sheetBack');
+  var sCount  = document.getElementById('sCount');
+  var sTime   = document.getElementById('sTime');
+  var pie     = document.getElementById('pie');
+  var segs    = document.getElementById('segs');
+  var sStage  = document.getElementById('sStage');
+  var sTags   = document.getElementById('sTags');
+  var sQ      = document.getElementById('sQ');
+  var sOpts   = document.getElementById('sOpts');
+  var sPrev   = document.getElementById('sPrev');
+  var sNext   = document.getElementById('sNext');
+  var rBack   = document.getElementById('rBack');
+  var rDone   = document.getElementById('rDone');
+
+  // belt and braces: the shell is not a scroller, so pin it back if the browser nudges it
+  phone.classList.add('ui-' + UI);
+  if(UI === 'classic'){
+    // the classic build used title case throughout
+    [['#startBtn', ' Attempt Now'], ['.tile .link', 'Watch Now'], ['.done-sol', 'View Solutions'],
+     ['.jobs .jb', 'Check Openings'], ['.r-attempt', 'Attempt Now'],
+     ['.target-row .lbl', 'My Target'], ['.r-lbl', 'Exam Readiness']].forEach(function(pair){
+      var el = document.querySelector(pair[0]);
+      if(!el) return;
+      if(pair[0] === '#startBtn') el.lastChild.textContent = pair[1];
+      else el.textContent = pair[1];
+    });
+    var sol = document.querySelector('.r-solutions');
+    if(sol) sol.childNodes[0].textContent = 'View Solutions ';
+  }
+
+  function pinShell(){ if(phone.scrollTop || phone.scrollLeft){ phone.scrollTop = 0; phone.scrollLeft = 0; } }
+  phone.addEventListener('scroll', pinShell, { passive:true });
+
+  var idx = 0;
+  var picks = [null, null, null];
+  var midway = false;   // a quiz was opened and left unfinished
+  var tId = null, left = 180;
+  var DURATION = 180;
+
+  /* ── open / close ─────────────────────────── */
+  startBtn.addEventListener('click', function(e){
+    var r = document.createElement('span');
+    r.className = 'ripple';
+    var size = Math.max(this.offsetWidth, this.offsetHeight);
+    var b = this.getBoundingClientRect();
+    r.style.width = r.style.height = size + 'px';
+    r.style.left = (e.clientX - b.left - size/2) + 'px';
+    r.style.top  = (e.clientY - b.top  - size/2) + 'px';
+    this.appendChild(r);
+    setTimeout(function(){ r.remove(); }, 600);
+    setTimeout(open, 120);
+  });
+
+  function growFromCard(){
+    var card  = document.querySelector('.quiz');
+    var sheet = document.querySelector('.sheet');
+    if(!card || !sheet || !card.offsetHeight) return false;
+
+    var c = card.getBoundingClientRect();
+    var s = sheet.getBoundingClientRect();
+    // start the clip at the card's footprint, expressed in the sheet's own box
+    var top    = Math.max(0, c.top    - s.top);
+    var right  = Math.max(0, s.right  - c.right);
+    var bottom = Math.max(0, s.bottom - c.bottom);
+    var left   = Math.max(0, c.left   - s.left);
+
+    sheet.classList.add('grow');
+    sheet.style.transition = 'none';
+    sheet.style.clipPath = 'inset(' + top + 'px ' + right + 'px ' + bottom + 'px ' + left + 'px round 16px)';
+    void sheet.offsetWidth;
+    card.classList.add('handoff');
+    sheet.style.transition = '';
+    sheet.style.clipPath = 'inset(0px 0px 0px 0px round 20px 20px 0px 0px)';
+
+    setTimeout(function(){
+      sheet.classList.remove('grow');
+      sheet.style.clipPath = '';
+      sheet.style.transition = '';
+    }, 460);
+    return true;
+  }
+
+  function open(){
+    // resume where they stopped rather than restarting — restarting is the punishment
+    if(!midway){
+      idx = 0;
+      picks = [null, null, null];
+      left = DURATION;
+    }
+    phone.classList.add('sheet-open');
+    phone.classList.remove('result-open');
+    render();
+    startTimer();
+    if(UI === 'refined') growFromCard();
+  }
+
+  function close(){
+    var card = document.querySelector('.quiz');
+    if(card) card.classList.remove('handoff');
+    phone.classList.remove('sheet-open');
+    clearInterval(tId);
+    markMidway();
+  }
+
+  function answered(){
+    return picks.filter(function(p){ return p !== null; }).length;
+  }
+
+  function markMidway(){
+    var done = answered();
+    midway = done > 0 && done < TOTAL;
+    phone.classList.toggle('midway', midway);
+    if(midway){
+      document.getElementById('resumeLbl').textContent = done + ' of ' + TOTAL + ' done';
+      document.getElementById('resumeFill').style.width = (done / TOTAL * 100) + '%';
+      startBtn.lastChild.textContent = ' Resume';
+      var lbl = document.getElementById('pillLabel');
+      if(lbl) lbl.textContent = done + ' of ' + TOTAL;
+    }
+  }
+
+  sheetBack.addEventListener('click', function(){
+    if(idx > 0){ go(-1); } else { close(); }
+  });
+
+  /* ── timer ────────────────────────────────── */
+  function startTimer(){
+    clearInterval(tId);
+    paintTimer();
+    tId = setInterval(function(){
+      left--;
+      paintTimer();
+      if(left <= 0){ clearInterval(tId); finish(); }
+    }, 1000);
+  }
+  function paintTimer(){
+    var m = Math.floor(left/60), s = left % 60;
+    sTime.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    // pie sweep — shows time consumed
+    var frac = 1 - (left / DURATION);
+    var a = frac * Math.PI * 2;
+    var x = 10 + 9 * Math.sin(a);
+    var y = 10 - 9 * Math.cos(a);
+    var big = frac > 0.5 ? 1 : 0;
+    pie.setAttribute('d', frac <= 0 ? 'M10 10' : 'M10 10 L10 1 A9 9 0 ' + big + ' 1 ' + x.toFixed(2) + ' ' + y.toFixed(2) + ' Z');
+  }
+
+  /* ── render a question ────────────────────── */
+  function render(){
+    var item = QUESTIONS[idx];
+
+    sCount.textContent = (idx+1) + '/' + TOTAL + ' Questions';
+    for(var i = 0; i < segs.children.length; i++){
+      segs.children[i].className = i <= idx ? 'on' : '';
+    }
+
+    sTags.innerHTML = '';
+    item.tags.forEach(function(t, i){
+      var el = document.createElement('span');
+      // first tag is the exam-year pill, the rest are topic links
+      el.className = (i === 0 && /\d{4}/.test(t)) ? 'tag-pill' : 'tag-topic';
+      el.textContent = t;
+      sTags.appendChild(el);
+    });
+
+    sQ.textContent = item.q;
+
+    sOpts.innerHTML = '';
+    item.opts.forEach(function(text, i){
+      var b = document.createElement('button');
+      b.className = 's-opt' + (picks[idx] === i ? ' sel' : '');
+      b.type = 'button';
+      b.innerHTML = '<span class="k">' + LETTERS[i] + '</span><span class="v">' + text + '</span>';
+      b.addEventListener('click', function(){ pick(i); });
+      sOpts.appendChild(b);
+    });
+
+    sPrev.className = 's-prev' + (idx > 0 ? ' show' : '');
+    sNext.textContent = idx === TOTAL - 1 ? 'Submit' : 'Next';
+  }
+
+  function pick(i){
+    picks[idx] = i;
+    var nodes = sOpts.children;
+    for(var n = 0; n < nodes.length; n++){
+      nodes[n].classList.toggle('sel', n === i);
+    }
+  }
+
+  /* ── navigation ───────────────────────────── */
+  function go(dir){
+    var target = idx + dir;
+    if(target < 0) return;
+    if(target >= TOTAL){ finish(); return; }
+    sStage.classList.add(dir > 0 ? 'out-left' : 'out-right');
+    setTimeout(function(){
+      idx = target;
+      render();
+      sStage.classList.remove('out-left','out-right');
+      sStage.classList.add(dir > 0 ? 'out-right' : 'out-left');
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          sStage.classList.remove('out-left','out-right');
+        });
+      });
+    }, 240);
+  }
+
+  sNext.addEventListener('click', function(){ go(1); });
+  sPrev.addEventListener('click', function(){ go(-1); });
+
+  /* ── result ───────────────────────────────── */
+  function finish(){
+    clearInterval(tId);
+    midway = false;
+    phone.classList.remove('midway');
+    startBtn.lastChild.textContent = UI === 'classic' ? ' Attempt Now' : ' Attempt now';
+    var correct = 0;
+    QUESTIONS.forEach(function(q, i){ if(picks[i] === q.answer) correct++; });
+
+    document.getElementById('rScore').textContent = correct + ' of ' + TOTAL;
+    document.getElementById('homeScore').textContent = correct + ' of ' + TOTAL;
+    var rs = document.getElementById('rStreak');
+    if(rs) rs.textContent = 'Day ' + (HABIT.streak + 1);
+    var teach = document.getElementById('firstTime');
+    if(teach) teach.style.display = HABIT.firstEver ? '' : 'none';
+    document.getElementById('rHead').textContent =
+      correct === TOTAL ? 'All correct!! That is exactly how a streak is built.'
+      : correct === 0   ? 'Tough one. Read the solutions once and it sticks.'
+      : 'Good Attempt!! Little more effort and get all correct.';
+
+    var layer = document.getElementById('resultLayer');
+    layer.scrollTop = 0;                 // always open at the top of the result
+    phone.classList.add('result-open');
+  }
+
+  function backHome(){
+    // close the overlays first so the student actually sees the chain close,
+    // then swap home to its completed state
+    phone.classList.remove('result-open');
+    close();
+    markTodayDone();
+    setTimeout(function(){
+      phone.classList.add('attempted');
+      document.dispatchEvent(new Event('nprep:state'));
+    }, 850);
+  }
+  rBack.addEventListener('click', backHome);
+  rDone.addEventListener('click', backHome);
+
+  /* ── keyboard ─────────────────────────────── */
+  document.addEventListener('keydown', function(e){
+    if(phone.classList.contains('result-open')){
+      if(e.key === 'Escape' || e.key === 'Enter') backHome();
+      return;
+    }
+    if(phone.classList.contains('sheet-open')){
+      var i = LETTERS.indexOf(e.key.toUpperCase());
+      if(i > -1 && sOpts.children[i]) sOpts.children[i].click();
+      else if(e.key === 'Enter' || e.key === 'ArrowRight') go(1);
+      else if(e.key === 'ArrowLeft') go(-1);
+      else if(e.key === 'Escape') close();
+    } else if(e.key === 'Enter'){
+      startBtn.click();
+    }
+  });
+
+  /* ── streak chip, week sheet, spec decay ──── */
+  var chip  = document.getElementById('streakChip');
+  var qmeta = document.getElementById('qmeta');
+
+  function paintStreak(){
+    document.getElementById('streakCount').textContent =
+      HABIT.streak > 0 ? HABIT.streak : '';
+    chip.classList.toggle('lit', HABIT.doneToday);
+    chip.classList.toggle('risk', HABIT.evening && !HABIT.doneToday && HABIT.streak > 0);
+    chip.classList.toggle('milestone', !!HABIT.milestone);
+    chip.style.display = HABIT.streak > 0 ? '' : 'none';   // nothing earned, nothing to show
+
+    // the pill mirrors the chip once the block scrolls away
+    var lbl = document.getElementById('pillLabel');
+    if(lbl) lbl.textContent = HABIT.streak > 0 ? String(HABIT.streak) : 'Quizzes';
+    startPillRoll();
+  }
+
+  var DECAY_SPEC = false;   // true = retire the spec once the habit is formed
+  var metaTimer = null;
+  var SPEC   = '3 questions <span class="dot">&middot;</span> 3 min';
+  var REASON = 'Boost your score <span class="dot">&middot;</span> <b>3 questions a day</b>';
+
+  var pillTimer = null;
+  function startPillRoll(){
+    var pill = document.getElementById('hpill');
+    var roll = document.getElementById('pillRoll');
+    clearInterval(pillTimer);
+    pill.classList.remove('rolled');
+    if(HABIT.streak > 0){ roll.style.width = ''; return; }
+
+    roll.style.width = '';
+  }
+
+  function paintMeta(){
+    if(HABIT.grace && !HABIT.doneToday){
+      // the highest-risk moment in the whole arc, answered with goodwill rather than a reset
+      qmeta.innerHTML = '<svg class="shield" viewBox="0 0 24 24"><path d="M12 3l7 2.8v5c0 4.1-2.8 7.6-7 8.9-4.2-1.3-7-4.8-7-8.9v-5z"/><path d="M9.3 12l2 2 3.4-3.7"/></svg>' +
+        ' Streak saved <span class="dot">&middot;</span> ' + (HABIT.graceLeft ? HABIT.graceLeft + ' grace left this week' : 'no grace left this week');
+      qmeta.className = 'qmeta grace';
+      qmeta.style.display = '';
+      return;
+    }
+    qmeta.className = 'qmeta';
+    var showSpec = !DECAY_SPEC || HABIT.sessions < 3 || HABIT.streak === 0;
+    if(!showSpec){ qmeta.innerHTML = ''; qmeta.style.display = 'none'; return; }
+    qmeta.style.display = '';
+
+    // early on there is no streak to protect, so the line alternates: what it is, then why.
+    // It cycles a few times and then rests on the reason — a line that rotates forever
+    // becomes a carousel and stops being read.
+    clearInterval(metaTimer);
+    if(HABIT.streak <= 2){
+      qmeta.innerHTML = '<span class="m m1">' + SPEC + '</span><span class="m m2">' + REASON + '</span>';
+      var flips = 0;
+      metaTimer = setInterval(function(){
+        qmeta.classList.toggle('rolled');
+        if(++flips >= 5){                       // ends on the reason
+          clearInterval(metaTimer);
+          qmeta.classList.add('rolled');
+        }
+      }, 2500);
+    } else {
+      qmeta.innerHTML = '<span class="m m1">' + SPEC + '</span>';
+    }
+  }
+
+  function paintWeek(){
+    var LETTERS = ['M','T','W','T','F','S','S'];
+    var days = document.getElementById('wsDays');
+    days.innerHTML = '';
+    HABIT.week.forEach(function(state, i){
+      var d = document.createElement('div');
+      d.className = 'ws-day ' + state;
+      d.innerHTML = '<span>' + LETTERS[i] + '</span><i>' +
+        (state === 'done' ? FLAME_MINI : '') + '</i>';
+      days.appendChild(d);
+    });
+    document.getElementById('wsCount').textContent =
+      HABIT.streak > 0 ? HABIT.streak + ' day streak' : 'No streak yet';
+    document.getElementById('wsSub').textContent =
+      HABIT.doneToday ? 'Today is done. Come back tomorrow.' : 'Answer today to keep it going';
+    document.getElementById('wsNote').textContent = 'Longest streak: ' + HABIT.longest + ' days';
+  }
+
+  var FLAME_MINI = '<svg viewBox="0 0 24 26"><path d="M13 .5s1.2 4-2.4 7C7 10.6 5 13 5 16.4A8 8 0 0021 17c0-4.2-2.6-6.3-3.7-9.4-.6 1.4-1.6 2.3-1.6 2.3S16.4 4.6 13 .5z" fill="#F7A83C"/></svg>';
+
+  (function habit(){
+    if(HABIT.streak === 0) phone.classList.add(HABIT.lapsed ? 'lapsed' : 'day0');
+    if(HABIT.evening) phone.classList.add('evening');
+    if(HABIT.milestone) phone.classList.add('milestone');
+    if(HABIT.lapsed) phone.classList.remove('day0');
+
+    paintStreak(); paintMeta(); paintWeek();
+
+    chip.addEventListener('click', function(){ phone.classList.add('week-open'); });
+    document.getElementById('wsClose').addEventListener('click', function(){ phone.classList.remove('week-open'); });
+    document.getElementById('weekSheet').addEventListener('click', function(e){
+      if(e.target === this) phone.classList.remove('week-open');
+    });
+
+    var el = document.getElementById('proofCount');
+    var live = document.querySelector('.live');
+    var target = HABIT.attemptedToday, n = 0;
+    var step = Math.max(1, Math.round(target / 36));
+    setTimeout(function(){
+      var t = setInterval(function(){
+        n += step;
+        if(n >= target){ n = target; clearInterval(t); startFeed(); }
+        el.textContent = n.toLocaleString('en-IN');
+      }, 18);
+    }, 780);
+
+    /* SIMULATED live feed — a server event in production, never a timer */
+    function startFeed(){
+      (function tick(){
+        setTimeout(function(){
+          n += 1;
+          el.textContent = n.toLocaleString('en-IN');
+          live.classList.remove('beat'); void live.offsetWidth; live.classList.add('beat');
+          var b = document.createElement('span');
+          b.className = 'bump'; b.textContent = '+1';
+          b.style.left = (el.offsetLeft + el.offsetWidth - 4) + 'px'; b.style.top = '-2px';
+          el.parentNode.parentNode.appendChild(b);
+          setTimeout(function(){ b.remove(); }, 1200);
+          tick();
+        }, 5200 + Math.round(Math.random() * 3600));
+      })();
+    }
+  })();
+
+  function markTodayDone(){
+    HABIT.streak += 1;
+    HABIT.doneToday = true;
+    HABIT.week[6] = 'done';
+    phone.classList.remove('evening','day0','lapsed');
+    paintStreak(); paintWeek();
+
+    // the flame catching and the number rolling are one event, so they run together
+    chip.classList.remove('filling');
+    void chip.offsetWidth;
+    chip.classList.add('filling');
+    var w = document.getElementById('streakCount');
+    w.classList.remove('roll');
+    void w.offsetWidth;
+    w.classList.add('roll');
+  }
+
+  /* ── compact pill on scroll ───────────────── */
+  (function(){
+    var home = document.getElementById('home');
+    var pill = document.getElementById('hpill');
+    // the pill takes over exactly when the quiz block clears the top
+    function card(){
+      return phone.classList.contains('attempted')
+        ? document.querySelector('.deck')
+        : document.querySelector('.quiz');
+    }
+    function sync(){
+      var c = card();
+      if(!c) return;
+      var gone = c.getBoundingClientRect().bottom - home.getBoundingClientRect().top < 64;
+      phone.classList.toggle('pill-on', gone);
+    }
+    home.addEventListener('scroll', sync, { passive:true });
+    window.addEventListener('resize', sync);
+    document.addEventListener('nprep:state', sync);
+    pill.addEventListener('click', function(){
+      // with no streak the pill is a call to action, so it has to deliver the action
+      if(HABIT.streak === 0){ open(); return; }
+      home.scrollTo({ top:0, behavior:'smooth' });
+    });
+  })();
+
+  /* ── prototype controls ───────────────────── */
+  (function dev(){
+    var q = location.search;
+    var curDay = (q.match(/day=(\d+)/) || ['','12'])[1];
+    var flags = { done:/done=1/.test(q), risk:/risk=1/.test(q), miss:/miss=1/.test(q) };
+    var curUI = /ui=classic/.test(q) ? 'classic' : 'refined';
+    function go(d, f, ui){
+      var parts = ['day=' + d];
+      ['done','risk','miss'].forEach(function(k){ if(f[k]) parts.push(k + '=1'); });
+      if((ui || curUI) === 'classic') parts.push('ui=classic');
+      location.search = '?' + parts.join('&');
+    }
+    document.querySelectorAll('.devbar button[data-ui]').forEach(function(btn){
+      if(btn.dataset.ui === curUI) btn.classList.add('on');
+      btn.addEventListener('click', function(){ go(curDay, flags, btn.dataset.ui); });
+    });
+    document.querySelectorAll('.devbar button[data-day]').forEach(function(btn){
+      if(btn.dataset.day === curDay) btn.classList.add('on');
+      btn.addEventListener('click', function(){ go(btn.dataset.day, flags); });
+    });
+    document.querySelectorAll('.devbar button[data-flag]').forEach(function(btn){
+      var k = btn.dataset.flag;
+      if(flags[k]) btn.classList.add('on');
+      btn.addEventListener('click', function(){
+        var next = Object.assign({}, flags); next[k] = !next[k];
+        go(curDay, next);
+      });
+    });
+  })();
+
+  /* ── fit the device frame to the viewport ── */
+  (function fitStage(){
+    var stage = document.getElementById('stage');
+    var W = 375, H = 812;
+    var forced = parseFloat((location.search.match(/zoom=([0-9.]+)/) || [])[1]);
+    function fit(){
+      var kH = (window.innerHeight - 132) / H;   // leaves room for the prototype control bar
+      var kW = (window.innerWidth - 32) / W;
+      // grow to fill a tall screen, but never shrink just because the window is short —
+      // a short window should scroll, not miniaturise the device
+      var k = forced || Math.min(kH, kW, 1.9);
+      if(!forced && k < 1) k = Math.min(kW, 1);
+      k = Math.max(k, 0.6);
+      stage.style.transform = 'scale(' + k + ')';
+      stage.style.marginBottom = (H * (k - 1)) + 'px';   // keep the document height honest
+    }
+    fit();
+    window.addEventListener('resize', fit);
+  })();
+
+  /* readiness % count-up */
+  (function(){
+    var el = document.getElementById('readyVal');
+    var n = 0;
+    var t = setInterval(function(){
+      n += 2;
+      if(n >= 66){ n = 66; clearInterval(t); }
+      el.textContent = n + '%';
+    }, 22);
+  })();
+})();
+</script>
+</body>
+</html>
